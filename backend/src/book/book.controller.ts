@@ -56,4 +56,10 @@ export class BookController {
   async getChapterSummary(@Param('chapterId') chapterId: string) {
     return await this.bookService.getChapterSummary(chapterId);
   }
+
+  @Post('chapters/:chapterId/podcast')
+  @UseGuards(JwtAuthGuard)
+  async generateChapterPodcast(@Param('chapterId') chapterId: string, @Request() req: { user: { id: string } }) {
+    return await this.bookService.generateChapterPodcast(chapterId, req.user.id);
+  }
 }

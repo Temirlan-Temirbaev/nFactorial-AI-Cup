@@ -32,6 +32,7 @@
     "@types/pdf-parse": "^1.1.5",
     "bcryptjs": "^3.0.2",
     "json5": "^2.2.3",
+    "openai": "^4.103.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pdf-lib": "^1.17.1",
