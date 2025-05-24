@@ -57,6 +57,48 @@ model Chapter {
 
   summary String?
   podcastUrl String?
+  test Test?
 
   @@map("chapters")
+}
+
+model Test {
+  id String @id @default(cuid())
+  title String
+  description String?
+  
+  chapterId String @unique
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  questions Question[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tests")
+}
+
+model Question {
+  id String @id @default(cuid())
+  questionText String
+  
+  testId String
+  test Test @relation(fields: [testId], references: [id], onDelete: Cascade)
+  
+  options Option[]
+  
+  createdAt DateTime @default(now())
+
+  @@map("questions")
+}
+
+model Option {
+  id String @id @default(cuid())
+  optionText String
+  isCorrect Boolean @default(false)
+  
+  questionId String
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("options")
 }
