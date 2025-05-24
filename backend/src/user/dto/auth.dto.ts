@@ -8,7 +8,6 @@ export class LoginDto {
 export class RegisterDto {
   email: string;
   password: string;
-  role: UserRole;
 }
 
 export class AuthResponseDto {

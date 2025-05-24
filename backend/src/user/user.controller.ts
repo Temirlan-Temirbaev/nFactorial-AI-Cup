@@ -20,28 +20,8 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  async getProfile(@Request() req) {
-    return req.user;
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.TEACHER)
-  @Get('teacher-only')
-  async teacherOnlyEndpoint(@Request() req) {
-    return {
-      message: 'This endpoint is only accessible by teachers',
-      user: req.user,
-    };
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.STUDENT)
-  @Get('student-only')
-  async studentOnlyEndpoint(@Request() req) {
-    return {
-      message: 'This endpoint is only accessible by students',
-      user: req.user,
-    };
+  @Get('check-login')
+  async checkLogin(@Request() req: { user: { id: string } }) {
+    return this.userService.findById(req.user.id);
   }
 } 

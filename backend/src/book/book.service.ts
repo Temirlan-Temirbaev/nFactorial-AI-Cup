@@ -4,7 +4,7 @@ import { CreateBookDto, BookChaptersDto } from './dto';
 import { v4 as uuid } from 'uuid';
 import { generativeModel } from '@shared/singleton';
 import { extractJsonBlock } from '@shared/utils';
-import { Book } from 'generated/prisma';
+import { Book, UserRole } from 'generated/prisma';
 
 interface MulterFile {
   buffer: Buffer;
@@ -29,8 +29,21 @@ export class BookService {
         where: { id: teacherId },
       });
 
-      if (!teacher) {
-        throw new NotFoundException('Teacher not found');
+      if (!teacher || teacher.role !== UserRole.TEACHER) {
+        throw new BadRequestException('Only teachers can upload books');
+      }
+
+      // Verify the class exists and teacher owns it
+      const classInfo = await this.prisma.class.findUnique({
+        where: { id: createBookDto.classId }
+      });
+
+      if (!classInfo) {
+        throw new NotFoundException('Class not found');
+      }
+
+      if (classInfo.teacherId !== teacherId) {
+        throw new BadRequestException('You can only upload books to your own classes');
       }
 
       const fileExtension = file.originalname.split('.').pop();
@@ -44,6 +57,7 @@ export class BookService {
             contentType: file.mimetype,
             originalName: file.originalname,
             uploadedBy: teacherId,
+            classId: createBookDto.classId,
           },
         },
       );
@@ -52,6 +66,7 @@ export class BookService {
         title: createBookDto.title,
         fileUri: `gs://${uploadedFile.bucket}/${uploadedFile.name}`,
         uploaderId: teacherId,
+        classId: createBookDto.classId,
       };
 
       const result = await generativeModel.generateContent({
@@ -66,7 +81,7 @@ export class BookService {
                 }
               },
               {
-                text: "Сделай оглавление этой книги: укажи названия параграфов и страницы, на которых они начинаются и заканчиваются. В JSON формате {title: string, startPage: number, endPage: number}[] и никак иначе"
+                text: "Create a table of contents for this book: specify chapter names and the pages on which they start and end. In JSON format {title: string, startPage: number, endPage: number}[] and nothing else"
               }
             ]
           }
@@ -79,10 +94,7 @@ export class BookService {
       const chaptersInfo = extractJsonBlock(result.response.candidates[0].content.parts[0].text);
 
       const book = await this.prisma.book.create({
-        data: {
-          ...bookData,
-          uploaderId: teacherId,
-        },
+        data: bookData,
       });
 
       await this.prisma.chapter.createMany({
@@ -100,11 +112,17 @@ export class BookService {
     }
   }
 
-  async getBook(bookId: string): Promise<Book> {
+  async getBook(bookId: string, userId: string): Promise<Book> {
     const book = await this.prisma.book.findUnique({
       where: { id: bookId },
       include: {
-        chaptersInfo: true
+        chaptersInfo: true,
+        class: {
+          include: {
+            teacher: true,
+            students: true,
+          }
+        }
       }
     });
 
@@ -112,21 +130,53 @@ export class BookService {
       throw new NotFoundException('Book not found');
     }
 
+    // Check if user has access to this book
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    const hasAccess = user.role === UserRole.TEACHER 
+      ? book.class.teacherId === userId 
+      : user.classId === book.classId;
+
+    if (!hasAccess) {
+      throw new BadRequestException('Access denied to this book');
+    }
+
     return book;
   }
 
-  async getBookChapters(bookId: string): Promise<BookChaptersDto> {
+  async getBookChapters(bookId: string, userId: string): Promise<BookChaptersDto> {
     const book = await this.prisma.book.findUnique({
       where: { id: bookId },
       include: {
         chaptersInfo: {
           orderBy: { startPage: 'asc' }
+        },
+        class: {
+          include: {
+            teacher: true,
+            students: true,
+          }
         }
       }
     });
 
     if (!book) {
       throw new NotFoundException('Book not found');
+    }
+
+    // Check if user has access to this book
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    const hasAccess = user.role === UserRole.TEACHER 
+      ? book.class.teacherId === userId 
+      : user.classId === book.classId;
+
+    if (!hasAccess) {
+      throw new BadRequestException('Access denied to this book');
     }
 
     return {

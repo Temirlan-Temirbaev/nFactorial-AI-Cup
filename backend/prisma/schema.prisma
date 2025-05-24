@@ -18,14 +18,40 @@ model User {
   email     String   @unique
   password  String
   role      UserRole
+  firstName String?
+  lastName  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   voicePreference String @default("bella")
 
-  uploadedBooks Book[] @relation("BookUploader")
+  // Teacher relationships
+  teachingClasses Class[] @relation("ClassTeacher")
+  uploadedBooks   Book[]  @relation("BookUploader")
+  
+  // Student relationships  
+  classId String?
+  studentClass Class? @relation("ClassStudents", fields: [classId], references: [id])
 
   @@map("users")
+}
+
+model Class {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique // 20-character random code
+  description String?
+  
+  teacherId   String
+  teacher     User     @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  students    User[]   @relation("ClassStudents")
+  books       Book[]   @relation("ClassBooks")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("classes")
 }
 
 model Book {
@@ -33,6 +59,9 @@ model Book {
   title       String
   fileUri     String
   chaptersInfo Chapter[]
+  
+  classId     String
+  class       Class    @relation("ClassBooks", fields: [classId], references: [id], onDelete: Cascade)
   
   uploaderId  String
   uploader    User     @relation("BookUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
@@ -42,7 +71,6 @@ model Book {
 
   @@map("books")
 }
-
 
 model Chapter {
   id String @id @default(cuid())

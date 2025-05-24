@@ -12,7 +12,7 @@ export class UserService {
   constructor(private jwtService: JwtService) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { email, password, role } = registerDto;
+    const { email, password } = registerDto;
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -28,7 +28,7 @@ export class UserService {
       data: {
         email,
         password: hashedPassword,
-        role,
+        role: "TEACHER",
       },
     });
 
@@ -75,15 +75,16 @@ export class UserService {
   }
 
   async findById(id: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        teachingClasses: true,
+        uploadedBooks: true,
+        studentClass: true,
       },
     });
+    delete user.password;
+    return user;
   }
+
 } 

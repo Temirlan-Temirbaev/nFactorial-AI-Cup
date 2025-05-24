@@ -3,9 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { TeacherModule } from './teacher/teacher.module';
 import { BookModule } from './book/book.module';
-import { TestController } from './test/test.controller';
 import { TestModule } from './test/test.module';
 import { ChapterModule } from './chapter/chapter.module';
+import { ClassModule } from './class/class.module';
 
 @Module({
   imports: [
@@ -15,7 +15,7 @@ import { ChapterModule } from './chapter/chapter.module';
     BookModule,
     TestModule,
     ChapterModule,
+    ClassModule,
   ],
-  controllers: [TestController],
 })
 export class AppModule {}

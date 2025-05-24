@@ -41,13 +41,13 @@ export class BookController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  async getBook(@Param('id') id: string) {
-    return await this.bookService.getBook(id);
+  async getBook(@Param('id') id: string, @Request() req: { user: { id: string } }) {
+    return await this.bookService.getBook(id, req.user.id);
   }
 
   @Get(':id/chapters')
   @UseGuards(JwtAuthGuard)
-  async getBookChapters(@Param('id') id: string) {
-    return await this.bookService.getBookChapters(id);
+  async getBookChapters(@Param('id') id: string, @Request() req: { user: { id: string } }) {
+    return await this.bookService.getBookChapters(id, req.user.id);
   }
 }
