@@ -51,5 +51,7 @@ model Chapter {
   bookId String
   book Book @relation(fields: [bookId], references: [id])
 
+  fileUri String?
+
   @@map("chapters")
 }

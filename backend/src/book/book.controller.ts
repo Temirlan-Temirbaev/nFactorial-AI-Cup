@@ -45,4 +45,15 @@ export class BookController {
     return await this.bookService.getBook(id);
   }
 
+  @Get(':id/chapters')
+  @UseGuards(JwtAuthGuard)
+  async getBookChapters(@Param('id') id: string) {
+    return await this.bookService.getBookChapters(id);
+  }
+
+  @Get('chapters/:chapterId/summary')
+  @UseGuards(JwtAuthGuard)
+  async getChapterSummary(@Param('chapterId') chapterId: string) {
+    return await this.bookService.getChapterSummary(chapterId);
+  }
 }

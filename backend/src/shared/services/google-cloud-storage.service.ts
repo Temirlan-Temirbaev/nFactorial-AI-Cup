@@ -85,6 +85,22 @@ export class GoogleCloudStorageService {
   }
 
   /**
+   * Download a file from Google Cloud Storage
+   */
+  async downloadFile(fileName: string): Promise<Buffer> {
+    try {
+      const file = this.bucket.file(fileName);
+      const [fileBuffer] = await file.download();
+      
+      this.logger.log(`File downloaded: ${fileName}`);
+      return fileBuffer;
+    } catch (error) {
+      this.logger.error(`Download error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Delete a file from Google Cloud Storage
    */
   async deleteFile(fileName: string): Promise<void> {
