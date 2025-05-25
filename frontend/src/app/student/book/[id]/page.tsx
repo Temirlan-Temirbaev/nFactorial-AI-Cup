@@ -192,7 +192,13 @@ export default function StudentBookDetailPage() {
                     <div className="text-center p-4 bg-orange-50 rounded-lg">
                       <ClipboardList className="w-6 h-6 text-orange-600 mx-auto mb-2" />
                       <p className="text-sm text-gray-600">Tests Available</p>
-                      <p className="text-xl font-bold text-gray-900">0</p>
+                      <p className="text-xl font-bold text-gray-900">
+                        {bookChapters.chapters.filter(ch => {
+                          // This would need to be calculated properly, for now showing 0
+                          // In a real app, you'd want to batch check test availability
+                          return false; // Placeholder - individual hooks don't work well for counting
+                        }).length}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -260,7 +266,7 @@ export default function StudentBookDetailPage() {
   );
 }
 
-// Student Test Modal Component (read-only)
+// Student Test Modal Component (interactive)
 interface StudentTestModalProps {
   chapterId: string;
   isOpen: boolean;
@@ -270,8 +276,29 @@ interface StudentTestModalProps {
 function StudentTestModal({ chapterId, isOpen, onClose }: StudentTestModalProps) {
   const { data: test, isLoading, error } = useChapterTest(chapterId);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
+  const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set());
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   
   if (!isOpen) return null;
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentQuestionIndex(0);
+      setUserAnswers({});
+      setSubmittedQuestions(new Set());
+      setSelectedOption(null);
+    }
+  }, [isOpen]);
+
+  // Reset selection when changing questions
+  useEffect(() => {
+    if (test?.questions[currentQuestionIndex]) {
+      const questionId = test.questions[currentQuestionIndex].id;
+      setSelectedOption(userAnswers[questionId] || null);
+    }
+  }, [currentQuestionIndex, test, userAnswers]);
 
   const handlePrevious = () => {
     setCurrentQuestionIndex(prev => Math.max(0, prev - 1));
@@ -283,7 +310,41 @@ function StudentTestModal({ chapterId, isOpen, onClose }: StudentTestModalProps)
     }
   };
 
+  const handleOptionSelect = (optionId: string) => {
+    if (test?.questions[currentQuestionIndex]) {
+      const questionId = test.questions[currentQuestionIndex].id;
+      if (!submittedQuestions.has(questionId)) {
+        setSelectedOption(optionId);
+      }
+    }
+  };
+
+  const handleSubmitAnswer = () => {
+    if (test?.questions[currentQuestionIndex] && selectedOption) {
+      const questionId = test.questions[currentQuestionIndex].id;
+      setUserAnswers(prev => ({ ...prev, [questionId]: selectedOption }));
+      setSubmittedQuestions(prev => new Set([...prev, questionId]));
+    }
+  };
+
   const currentQuestion = test?.questions[currentQuestionIndex];
+  const isQuestionSubmitted = currentQuestion ? submittedQuestions.has(currentQuestion.id) : false;
+  const userAnswer = currentQuestion ? userAnswers[currentQuestion.id] : null;
+  const correctOption = currentQuestion?.options.find(opt => opt.isCorrect);
+  const isCorrectAnswer = userAnswer === correctOption?.id;
+
+  const getQuestionStatus = (questionIndex: number) => {
+    const question = test?.questions[questionIndex];
+    if (!question) return 'unanswered';
+    
+    const questionId = question.id;
+    if (submittedQuestions.has(questionId)) {
+      const answer = userAnswers[questionId];
+      const correct = question.options.find(opt => opt.isCorrect);
+      return answer === correct?.id ? 'correct' : 'incorrect';
+    }
+    return userAnswers[questionId] ? 'selected' : 'unanswered';
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -306,73 +367,132 @@ function StudentTestModal({ chapterId, isOpen, onClose }: StudentTestModalProps)
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Question Navigation */}
-            <div className="flex items-center justify-between border-b pb-4">
-              <div className="flex items-center space-x-4">
-                <Button
-                  onClick={handlePrevious}
-                  disabled={currentQuestionIndex === 0}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Previous
-                </Button>
-                <span className="text-sm text-gray-600">
-                  Question {currentQuestionIndex + 1} of {test.questions.length}
-                </span>
-                <Button
-                  onClick={handleNext}
-                  disabled={currentQuestionIndex === test.questions.length - 1}
-                  variant="outline"
-                  size="sm"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-              <div className="text-sm text-gray-500">
-                Created: {new Date(test.createdAt).toLocaleDateString()}
-              </div>
+            
+
+            {/* Question Overview */}
+            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg">
+              <span className="text-sm text-gray-600 mr-2">Questions:</span>
+              {test.questions.map((_, index) => {
+                const status = getQuestionStatus(index);
+                return (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentQuestionIndex(index)}
+                    className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
+                      index === currentQuestionIndex
+                        ? 'bg-blue-600 text-white'
+                        : status === 'correct'
+                        ? 'bg-green-500 text-white'
+                        : status === 'incorrect'
+                        ? 'bg-red-500 text-white'
+                        : status === 'selected'
+                        ? 'bg-yellow-500 text-white'
+                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                    }`}
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Current Question */}
             {currentQuestion && (
               <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-white p-6 rounded-lg border">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     {currentQuestion.questionText}
                   </h3>
                   
-                  <div className="space-y-3">
-                    {currentQuestion.options.map((option, index) => (
-                      <div
-                        key={option.id}
-                        className={`p-3 rounded-lg border-2 transition-colors ${
-                          option.isCorrect
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium ${
-                            option.isCorrect
-                              ? 'bg-green-500 text-white'
-                              : 'bg-gray-200 text-gray-600'
-                          }`}>
-                            {String.fromCharCode(65 + index)}
+                  <div className="space-y-3 mb-6">
+                    {currentQuestion.options.map((option, index) => {
+                      const isSelected = selectedOption === option.id;
+                      const isCorrect = option.isCorrect;
+                      const showResult = isQuestionSubmitted;
+                      
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => handleOptionSelect(option.id)}
+                          disabled={isQuestionSubmitted}
+                          className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
+                            showResult
+                              ? isCorrect
+                                ? 'border-green-500 bg-green-50'
+                                : userAnswer === option.id
+                                ? 'border-red-500 bg-red-50'
+                                : 'border-gray-200 bg-gray-50'
+                              : isSelected
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                          } ${isQuestionSubmitted ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium ${
+                              showResult
+                                ? isCorrect
+                                  ? 'bg-green-500 text-white'
+                                  : userAnswer === option.id
+                                  ? 'bg-red-500 text-white'
+                                  : 'bg-gray-300 text-gray-600'
+                                : isSelected
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-200 text-gray-600'
+                            }`}>
+                              {String.fromCharCode(65 + index)}
+                            </div>
+                            <span className="flex-1 text-gray-900">{option.optionText}</span>
+                            {showResult && isCorrect && (
+                              <CheckCircle className="w-5 h-5 text-green-500" />
+                            )}
+                            {showResult && userAnswer === option.id && !isCorrect && (
+                              <span className="w-5 h-5 text-red-500">✗</span>
+                            )}
                           </div>
-                          <span className="flex-1 text-gray-900">{option.optionText}</span>
-                          {option.isCorrect && (
-                            <CheckCircle className="w-5 h-5 text-green-500" />
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
+
+                  {/* Submit/Result Section */}
+                  {!isQuestionSubmitted ? (
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={handleSubmitAnswer}
+                        disabled={!selectedOption}
+                        className="px-8"
+                      >
+                        Submit Answer
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      {isCorrectAnswer ? (
+                        <div className="p-4 bg-green-50 rounded-lg">
+                          <div className="flex items-center justify-center space-x-2 text-green-800">
+                            <CheckCircle className="w-5 h-5" />
+                            <span className="font-medium">Correct!</span>
+                          </div>
+                          <p className="text-sm text-green-700 mt-1">Well done! You got the right answer.</p>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-red-50 rounded-lg">
+                          <div className="flex items-center justify-center space-x-2 text-red-800 mb-2">
+                            <span className="w-5 h-5 text-red-500">✗</span>
+                            <span className="font-medium">Incorrect</span>
+                          </div>
+                          <p className="text-sm text-red-700">
+                            The correct answer is: <span className="font-medium">{correctOption?.optionText}</span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
+
+            
           </div>
         )}
       </DialogContent>
