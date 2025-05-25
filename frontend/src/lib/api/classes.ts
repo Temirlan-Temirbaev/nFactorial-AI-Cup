@@ -82,8 +82,8 @@ export const classApi = {
     return response.data;
   },
 
-  getMyClasses: async (): Promise<ClassInfo[]> => {
-    const response = await apiClient.get<ClassInfo[]>('/classes/my-classes');
+  getMyClasses: async (): Promise<ClassInfo[] | ClassDetails> => {
+    const response = await apiClient.get<ClassInfo[] | ClassDetails>('/classes/my-classes');
     return response.data;
   },
 

@@ -18,6 +18,8 @@ export interface BookChapters {
     title: string;
     startPage: number;
     endPage: number;
+    summary?: string;
+    podcastUrl?: string;
   }>;
 }
 
