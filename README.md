@@ -1,11 +1,11 @@
 # nFactorial-Ai-Cup-2025
 Fork this repository and build nFactorial Ai Cup 2025 projects 
 
-## < Your Name >
+## Temirbaev Temirlan
 
-## < Your App's Name >
+## iTeacher
 
-## < Your App's description, technical considerations, etc. >
+Teacher can create a class, and give a code by messanger, so students can join to class, after it teacher uploads book, waits about a minute, and he gets a full plan of book, than he can generate summary/presentation/mini-quiz/podcast of some lesson/chapter, and students get access to that generated AI Content.
 
 
 ## Typeform to submit:
