@@ -85,6 +85,7 @@ model Chapter {
 
   summary String?
   podcastUrl String?
+  presentationUrl String?
   test Test?
 
   @@map("chapters")

@@ -17,4 +17,10 @@ export class ChapterController {
   async generateChapterPodcast(@Param('chapterId') chapterId: string, @Request() req: { user: { id: string } }) {
     return await this.chapterService.generateChapterPodcast(chapterId, req.user.id);
   }
+
+  @Post(':chapterId/presentation')
+  @UseGuards(JwtAuthGuard)
+  async generateChapterPresentation(@Param('chapterId') chapterId: string) {
+    return await this.chapterService.generateChapterPresentation(chapterId);
+  }
 }

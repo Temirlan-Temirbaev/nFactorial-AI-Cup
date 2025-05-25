@@ -47,7 +47,30 @@ export class BookService {
       }
 
       const fileExtension = file.originalname.split('.').pop();
-      const uniqueFileName = `books/${uuid()}.${fileExtension}`;
+      const uniqueFileName = `books/${file.originalname.split('.')[0]}-${teacherId}.${fileExtension}`;
+
+      if (await this.prisma.book.findFirst({where: {fileUri: {equals: `gs://${uniqueFileName}-${teacherId}.${fileExtension}`}}})) {
+        const existingBook = await this.prisma.book.findFirst({
+          where: {
+            fileUri: {
+              equals: uniqueFileName
+            },
+          },
+          include: {
+            chaptersInfo: true,
+          }
+        })
+        
+        if (existingBook) {
+          return {
+            title: createBookDto.title,
+            fileUri: existingBook.fileUri,
+            uploaderId: teacherId,
+            classId: createBookDto.classId,
+            chapters: existingBook.chaptersInfo,
+          }
+        }
+      }
 
       const uploadedFile = await this.storageService.uploadFile(
         file.buffer,
