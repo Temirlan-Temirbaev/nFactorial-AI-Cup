@@ -169,7 +169,7 @@ export default function StudentBookDetailPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div className="text-center p-4 bg-blue-50 rounded-lg">
                       <FileText className="w-6 h-6 text-blue-600 mx-auto mb-2" />
                       <p className="text-sm text-gray-600">Chapters</p>
@@ -187,6 +187,13 @@ export default function StudentBookDetailPage() {
                       <p className="text-sm text-gray-600">Podcasts</p>
                       <p className="text-xl font-bold text-gray-900">
                         {bookChapters.chapters.filter(ch => ch.podcastUrl).length}
+                      </p>
+                    </div>
+                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                      <ExternalLink className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">Presentations</p>
+                      <p className="text-xl font-bold text-gray-900">
+                        {bookChapters.chapters.filter(ch => ch.presentationUrl).length}
                       </p>
                     </div>
                     <div className="text-center p-4 bg-orange-50 rounded-lg">
@@ -551,6 +558,12 @@ function StudentChapterCard({
                 Podcast
               </Badge>
             )}
+            {chapter.presentationUrl && (
+              <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">
+                <ExternalLink className="w-3 h-3 mr-1" />
+                Presentation
+              </Badge>
+            )}
             {hasTest && (
               <Badge variant="secondary" className="bg-orange-100 text-orange-800">
                 <ClipboardList className="w-3 h-3 mr-1" />
@@ -561,7 +574,7 @@ function StudentChapterCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {/* Summary */}
           <div className="space-y-2">
             {chapter.summary ? (
@@ -605,6 +618,27 @@ function StudentChapterCard({
               <div className="p-3 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium text-gray-600">No Podcast</span>
                 <p className="text-xs text-gray-500 mt-1">Podcast not yet available</p>
+              </div>
+            )}
+          </div>
+
+          {/* Presentation */}
+          <div className="space-y-2">
+            {chapter.presentationUrl ? (
+              <div className="p-3 bg-indigo-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-indigo-800">Presentation Available</span>
+                  <Button size="sm" onClick={() => window.open(chapter.presentationUrl, '_blank')}>
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    View
+                  </Button>
+                </div>
+                <p className="text-xs text-indigo-600 mt-1">AI-generated presentation available</p>
+              </div>
+            ) : (
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-600">No Presentation</span>
+                <p className="text-xs text-gray-500 mt-1">Presentation not yet available</p>
               </div>
             )}
           </div>

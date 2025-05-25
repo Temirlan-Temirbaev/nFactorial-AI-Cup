@@ -20,6 +20,7 @@ export interface BookChapters {
     endPage: number;
     summary?: string;
     podcastUrl?: string;
+    presentationUrl?: string;
   }>;
 }
 

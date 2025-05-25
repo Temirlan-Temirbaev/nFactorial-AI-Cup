@@ -31,6 +31,7 @@ export type {
 export type {
   ChapterSummary,
   ChapterPodcast,
+  ChapterPresentation,
 } from './chapters';
 
 export type {

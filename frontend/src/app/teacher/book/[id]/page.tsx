@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { TeacherRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBook, useBookChapters } from '@/hooks/useBooks';
-import { useGetChapterSummary, useGenerateChapterPodcast } from '@/hooks/useChapters';
+import { useGetChapterSummary, useGenerateChapterPodcast, useGenerateChapterPresentation } from '@/hooks/useChapters';
 import { useGenerateChapterTest, useHasChapterTest, useChapterTest } from '@/hooks/useTests';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,10 +26,11 @@ export default function BookDetailPage() {
   
   const getSummaryMutation = useGetChapterSummary();
   const generatePodcastMutation = useGenerateChapterPodcast();
+  const generatePresentationMutation = useGenerateChapterPresentation();
   const generateTestMutation = useGenerateChapterTest();
   
   const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
-  const [activeAction, setActiveAction] = useState<'summary' | 'podcast' | 'test' | null>(null);
+  const [activeAction, setActiveAction] = useState<'summary' | 'podcast' | 'presentation' | 'test' | null>(null);
   
   // Audio state
   const [playingChapter, setPlayingChapter] = useState<string | null>(null);
@@ -72,6 +73,17 @@ export default function BookDetailPage() {
       await generatePodcastMutation.mutateAsync(chapterId);
     } catch (error) {
       console.error('Failed to generate podcast:', error);
+    } finally {
+      setActiveAction(null);
+    }
+  };
+
+  const handleGeneratePresentation = async (chapterId: string) => {
+    try {
+      setActiveAction('presentation');
+      await generatePresentationMutation.mutateAsync(chapterId);
+    } catch (error) {
+      console.error('Failed to generate presentation:', error);
     } finally {
       setActiveAction(null);
     }
@@ -207,7 +219,7 @@ export default function BookDetailPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div className="text-center p-4 bg-blue-50 rounded-lg">
                       <FileText className="w-6 h-6 text-blue-600 mx-auto mb-2" />
                       <p className="text-sm text-gray-600">Chapters</p>
@@ -225,6 +237,13 @@ export default function BookDetailPage() {
                       <p className="text-sm text-gray-600">Podcasts</p>
                       <p className="text-xl font-bold text-gray-900">
                         {bookChapters.chapters.filter(ch => ch.podcastUrl).length}
+                      </p>
+                    </div>
+                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                      <ExternalLink className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">Presentations</p>
+                      <p className="text-xl font-bold text-gray-900">
+                        {bookChapters.chapters.filter(ch => ch.presentationUrl).length}
                       </p>
                     </div>
                     <div className="text-center p-4 bg-orange-50 rounded-lg">
@@ -252,6 +271,7 @@ export default function BookDetailPage() {
                     index={index}
                     onGenerateSummary={handleGenerateSummary}
                     onGeneratePodcast={handleGeneratePodcast}
+                    onGeneratePresentation={handleGeneratePresentation}
                     onGenerateTest={handleGenerateTest}
                     isGenerating={activeAction !== null}
                     activeAction={activeAction}
@@ -432,9 +452,10 @@ interface ChapterCardProps {
   index: number;
   onGenerateSummary: (id: string) => void;
   onGeneratePodcast: (id: string) => void;
+  onGeneratePresentation: (id: string) => void;
   onGenerateTest: (id: string) => void;
   isGenerating: boolean;
-  activeAction: 'summary' | 'podcast' | 'test' | null;
+  activeAction: 'summary' | 'podcast' | 'presentation' | 'test' | null;
   playingChapter: string | null;
   isPlaying: boolean;
   onAudioToggle: (chapterId: string, podcastUrl: string) => void;
@@ -447,6 +468,7 @@ function ChapterCard({
   index, 
   onGenerateSummary, 
   onGeneratePodcast, 
+  onGeneratePresentation,
   onGenerateTest,
   isGenerating,
   activeAction,
@@ -488,6 +510,12 @@ function ChapterCard({
                 Podcast
               </Badge>
             )}
+            {chapter.presentationUrl && (
+              <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">
+                <ExternalLink className="w-3 h-3 mr-1" />
+                Presentation
+              </Badge>
+            )}
             {hasTest && (
               <Badge variant="secondary" className="bg-orange-100 text-orange-800">
                 <ClipboardList className="w-3 h-3 mr-1" />
@@ -498,7 +526,7 @@ function ChapterCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {/* Summary */}
           <div className="space-y-2">
             {chapter.summary ? (
@@ -568,6 +596,41 @@ function ChapterCard({
                   <>
                     <Headphones className="w-3 h-3 mr-2" />
                     Generate Podcast
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          {/* Presentation */}
+          <div className="space-y-2">
+            {chapter.presentationUrl ? (
+              <div className="p-3 bg-indigo-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-indigo-800">Presentation Ready</span>
+                  <Button size="sm" onClick={() => window.open(chapter.presentationUrl, '_blank')}>
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    View
+                  </Button>
+                </div>
+                <p className="text-xs text-indigo-600 mt-1">AI-generated presentation available</p>
+              </div>
+            ) : (
+              <Button 
+                onClick={() => onGeneratePresentation(chapter.id)}
+                disabled={isGenerating}
+                className="w-full bg-indigo-600 hover:bg-indigo-700"
+                size="sm"
+              >
+                {isGenerating && activeAction === 'presentation' ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="w-3 h-3 mr-2" />
+                    Generate Presentation
                   </>
                 )}
               </Button>
